@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Daily English 2.0 — Intermediate (World & Tech)</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;line-height:1.5;margin:0;padding:0;background:#f6f7fb;color:#0f172a}
+  header{background:#0b5cff;color:white;padding:18px 20px}
+  header h1{margin:0;font-size:20px}
+  .container{max-width:900px;margin:18px auto;padding:0 14px}
+  .card{background:white;border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 6px 18px rgba(12,15,30,0.05)}
+  .meta{font-size:13px;color:#475569;margin-bottom:6px}
+  a.title{color:#0b5cff;text-decoration:none;font-weight:600;font-size:16px}
+  footer{color:#94a3b8;font-size:13px;text-align:center;padding:18px 0}
+  .loader{padding:30px;text-align:center;color:#64748b}
+  button{padding:6px 12px;border:none;border-radius:6px;background:#0b5cff;color:white;cursor:pointer;font-size:14px}
+  button:hover{opacity:0.85}
+</style>
+</head>
+<body>
+<header>
+  <h1>Daily English 2.0 — World & Technology</h1>
+</header>
+
+<div class="container">
+  <button id="refreshBtn">Refresh News</button>
+  <div id="feedList"></div>
+  <div id="loader" class="loader">Loading news…</div>
+  <footer>English Practice — Updated from World & Tech News</footer>
+</div>
+
+<script>
+const feeds = [
+  {name:'BBC World', url:'https://feeds.bbci.co.uk/news/world/rss.xml'},
+  {name:'Reuters World', url:'https://feeds.reuters.com/Reuters/worldNews'},
+  {name:'The Guardian World', url:'https://www.theguardian.com/world/rss'},
+  {name:'TechCrunch', url:'https://techcrunch.com/feed/'}
+];
+
+const RSS2JSON = (rss) => `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rss)}`;
+
+async function fetchFeed(feed){
+  try{
+    const res = await fetch(RSS2JSON(feed.url));
+    const data = await res.json();
+    if(data.status && data.status !== 'ok') throw new Error(data.message);
+    return (data.items||[]).map(i => ({
+      title: i.title,
+      link: i.link,
+      pubDate: new Date(i.pubDate),
+      content: i.contentSnippet || '',
+      source: feed.name
+    }));
+  } catch(err){ return []; }
+}
+
+async function loadAll(){
+  document.getElementById('loader').style.display='block';
+  const results = await Promise.all(feeds.map(f => fetchFeed(f)));
+  const merged = results.flat();
+  merged.sort((a,b)=> b.pubDate - a.pubDate);
+  renderItems(merged.slice(0,25));
+  document.getElementById('loader').style.display='none';
+}
+
+function renderItems(items){
+  const list=document.getElementById('feedList');
+  list.innerHTML='';
+  items.forEach(it=>{
+    const card=document.createElement('div');card.className='card';
+    card.innerHTML = `
+      <div class="meta">${it.source} • ${it.pubDate.toLocaleString()}</div>
+      <a class="title" href="${it.link}" target="_blank">${it.title}</a>
+      <div style="margin-top:6px">${it.content}</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('refreshBtn').onclick = ()=>loadAll();
+loadAll();
+</script>
+</body>
+  </html>
